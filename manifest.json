@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "ADHD Reader",
+  "version": "1.0.0",
+  "description": "Makes reading easier for people with ADHD, dyslexia, and neurodivergent conditions using eye tracking and adaptive typography",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/lib/webgazer.min.js", "src/content/content.js"],
+      "css": ["src/content/styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/lib/webgazer.min.js",
+        "src/lib/page-bridge.js",
+        "src/content/eye-tracker.js",
+        "src/content/text-enhancer.js",
+        "src/content/focus-overlay.js",
+        "assets/fonts/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

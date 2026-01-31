@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADHD Reader Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <h1>📖 ADHD Reader</h1>
+      <label class="toggle-switch main-toggle">
+        <input type="checkbox" id="enabled" checked>
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <main class="popup-content">
+      <!-- Eye Tracking Section -->
+      <section class="settings-section">
+        <div class="section-header">
+          <span class="section-icon">👁️</span>
+          <h2>Eye Tracking</h2>
+        </div>
+        <div class="setting-row">
+          <label>Enable Eye Tracking</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="eyeTracking">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <button id="calibrateBtn" class="btn btn-secondary">
+          🎯 Calibrate
+        </button>
+      </section>
+
+      <!-- Typography Section -->
+      <section class="settings-section">
+        <div class="section-header">
+          <span class="section-icon">📝</span>
+          <h2>Typography</h2>
+        </div>
+        
+        <div class="setting-row">
+          <label>Bionic Reading</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="bionicReading">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <label>Font</label>
+          <select id="fontFamily">
+            <option value="default">Default</option>
+            <option value="opendyslexic">OpenDyslexic</option>
+            <option value="lexie">Lexie Readable</option>
+            <option value="comic">Comic Sans</option>
+          </select>
+        </div>
+
+        <div class="setting-row slider-row">
+          <label>Font Size: <span id="fontSizeValue">100%</span></label>
+          <input type="range" id="fontSize" min="80" max="150" value="100" step="5">
+        </div>
+
+        <div class="setting-row slider-row">
+          <label>Line Height: <span id="lineHeightValue">1.6</span></label>
+          <input type="range" id="lineHeight" min="1.2" max="2.5" value="1.6" step="0.1">
+        </div>
+
+        <div class="setting-row slider-row">
+          <label>Letter Spacing: <span id="letterSpacingValue">0px</span></label>
+          <input type="range" id="letterSpacing" min="0" max="5" value="0" step="0.5">
+        </div>
+
+        <div class="setting-row slider-row">
+          <label>Word Spacing: <span id="wordSpacingValue">0px</span></label>
+          <input type="range" id="wordSpacing" min="0" max="10" value="0" step="1">
+        </div>
+      </section>
+
+      <!-- Focus Section -->
+      <section class="settings-section">
+        <div class="section-header">
+          <span class="section-icon">🎯</span>
+          <h2>Focus</h2>
+        </div>
+        
+        <div class="setting-row slider-row">
+          <label>Blur Amount: <span id="blurAmountValue">3px</span></label>
+          <input type="range" id="blurAmount" min="0" max="10" value="3" step="0.5">
+        </div>
+
+        <div class="setting-row">
+          <label>Line Guide</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="lineGuide" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Overlay Section -->
+      <section class="settings-section">
+        <div class="section-header">
+          <span class="section-icon">🎨</span>
+          <h2>Color Overlay</h2>
+        </div>
+        
+        <div class="setting-row">
+          <label>Enable Overlay</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="overlayEnabled">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="color-picker">
+          <button class="color-btn active" data-color="cream" style="background: #fffdf0;">Cream</button>
+          <button class="color-btn" data-color="blue" style="background: #c8dcff;">Blue</button>
+          <button class="color-btn" data-color="yellow" style="background: #ffffc8;">Yellow</button>
+          <button class="color-btn" data-color="green" style="background: #c8ffdc;">Green</button>
+          <button class="color-btn" data-color="peach" style="background: #ffdcc8;">Peach</button>
+        </div>
+      </section>
+
+      <!-- Accessibility Section -->
+      <section class="settings-section">
+        <div class="section-header">
+          <span class="section-icon">♿</span>
+          <h2>Accessibility</h2>
+        </div>
+        
+        <div class="setting-row">
+          <label>Reduce Motion</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="reduceMotion">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <label>High Contrast</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="highContrast">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <footer class="popup-footer">
+      <p>Press <kbd>E</kbd> <kbd>B</kbd> <kbd>F</kbd> <kbd>O</kbd> <kbd>L</kbd> for quick toggles</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
