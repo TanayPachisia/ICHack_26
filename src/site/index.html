@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ADHD Reader — PDF Viewer (Local)</title>
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body>
+  <div class="adhd-reader-root">
+    <header class="viewer-header">
+      <h1>ADHD Reader — PDF Viewer</h1>
+      <div class="controls">
+        <input id="fileInput" type="file" accept="application/pdf" />
+        <button id="toggleBionic">Toggle Bionic</button>
+        <button id="toggleFocus">Toggle Focus</button>
+        <button id="toggleOverlay">Toggle Overlay</button>
+      </div>
+    </header>
+
+    <main id="viewerMain">
+      <div id="pdfContainer"></div>
+      <div id="status" class="status">Drop or choose a PDF to begin.</div>
+    </main>
+
+    <footer class="viewer-footer">
+      <p>Serve this directory over <code>localhost</code> (e.g. <code>python -m http.server 8000</code>) and open <code>/src/site/index.html</code>.</p>
+    </footer>
+  </div>
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>

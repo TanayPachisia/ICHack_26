@@ -46,6 +46,21 @@ A Chrome extension that makes reading easier for people with ADHD, dyslexia, and
 - No data is sent to external servers
 - Camera access is only used when eye tracking is enabled
 
+## Demo: Local PDF Viewer
+
+A simple local PDF viewer was added at `src/site/index.html` that demonstrates the bionic-reading and focus/overlay features on PDFs with selectable text using PDF.js.
+
+Quick start:
+
+1. Run a local static server from the project root (serve over localhost/HTTPS):
+   - Python: `python -m http.server 8000`
+   - Or `npx http-server . -p 8000`
+2. Open: `http://localhost:8000/src/site/index.html`
+3. Choose a PDF using the file picker. If a page has no selectable text the viewer will show `(No selectable text on this page)`.
+
+Notes:
+- This viewer is intended for local testing and does not modify or remove any eye-tracking code. Eye-tracking modules have been left untouched to avoid conflicts with ongoing work.
+
 ## License
 
 MIT
