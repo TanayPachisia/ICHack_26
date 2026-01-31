@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADHD Reader - Focus-Enhanced PDF Reading</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <!-- Main Container -->
+  <div class="app-container">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <h1>📄 ADHD Reader</h1>
+        <p class="tagline">Eye-tracking powered focus for easier reading</p>
+      </div>
+      
+      <!-- Controls (hidden until PDF loaded) -->
+      <div class="header-controls" id="headerControls" style="display: none;">
+        <button class="control-btn" id="eyeTrackingBtn" title="Toggle Eye Tracking">
+          <span class="icon">👁️</span>
+          <span class="label">Start Eye Tracking</span>
+        </button>
+        <button class="control-btn" id="settingsBtn" title="Adjust Settings">
+          <span class="icon">⚙️</span>
+        </button>
+        <button class="control-btn" id="resetBtn" title="Upload New PDF">
+          <span class="icon">🔄</span>
+          <span class="label">New PDF</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      
+      <!-- Upload Section (shown initially) -->
+      <section class="upload-section" id="uploadSection">
+        <div class="upload-card">
+          <div class="upload-icon">📄</div>
+          <h2>Upload Your PDF</h2>
+          <p>Eye tracking will automatically reduce opacity of surrounding text,<br>helping you maintain focus while reading.</p>
+          
+          <!-- Upload Button -->
+          <label for="pdfFileInput" class="upload-btn">
+            <span class="icon">📁</span>
+            Choose PDF File
+          </label>
+          <input type="file" id="pdfFileInput" accept="application/pdf" style="display: none;">
+          
+          <!-- Features List -->
+          <div class="features-list">
+            <div class="feature-item">
+              <span class="feature-icon">✓</span>
+              <span>Eye-tracking focus enhancement</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">✓</span>
+              <span>Adjustable focus radius</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">✓</span>
+              <span>Smooth opacity transitions</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PDF Viewer Section (hidden initially) -->
+      <section class="pdf-viewer-section" id="pdfViewerSection" style="display: none;">
+        
+        <!-- PDF Canvas (rendered PDF background) -->
+        <div class="pdf-canvas-wrapper">
+          <canvas id="pdfCanvas"></canvas>
+        </div>
+        
+        <!-- Text Layer (interactive text with opacity control) -->
+        <div class="text-layer" id="textLayer"></div>
+        
+        <!-- Gaze Indicator (debug/visual feedback) -->
+        <div class="gaze-indicator" id="gazeIndicator"></div>
+      </section>
+
+    </main>
+
+    <!-- Settings Panel (slide-in from right) -->
+    <aside class="settings-panel" id="settingsPanel">
+      <div class="settings-header">
+        <h3>Settings</h3>
+        <button class="close-btn" id="closeSettingsBtn">✕</button>
+      </div>
+      
+      <div class="settings-body">
+        <!-- Focus Radius Control -->
+        <div class="setting-group">
+          <label for="focusRadiusSlider">
+            <span class="setting-label">Focus Radius</span>
+            <span class="setting-value" id="focusRadiusValue">200px</span>
+          </label>
+          <input type="range" id="focusRadiusSlider" min="50" max="500" value="200" step="10">
+          <p class="setting-description">How wide the clear focus area should be</p>
+        </div>
+
+        <!-- Minimum Opacity Control -->
+        <div class="setting-group">
+          <label for="minOpacitySlider">
+            <span class="setting-label">Background Opacity</span>
+            <span class="setting-value" id="minOpacityValue">15%</span>
+          </label>
+          <input type="range" id="minOpacitySlider" min="0" max="80" value="15" step="5">
+          <p class="setting-description">How visible unfocused text should be</p>
+        </div>
+
+        <!-- Falloff Type -->
+        <div class="setting-group">
+          <label for="falloffTypeSelect">
+            <span class="setting-label">Transition Style</span>
+          </label>
+          <select id="falloffTypeSelect">
+            <option value="gaussian">Smooth (Gaussian)</option>
+            <option value="linear">Linear</option>
+          </select>
+          <p class="setting-description">How opacity fades from focus to edge</p>
+        </div>
+
+        <!-- Show Gaze Indicator -->
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="showGazeIndicator">
+            <span>Show gaze indicator</span>
+          </label>
+          <p class="setting-description">Visual dot showing where you're looking</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Status Bar (bottom) -->
+    <footer class="status-bar">
+      <div class="status-left">
+        <span class="status-indicator" id="statusIndicator">⚪</span>
+        <span class="status-text" id="statusText">Ready to upload PDF</span>
+      </div>
+      <div class="status-right">
+        <span id="pageInfo"></span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Load Dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="src/lib/webgazer.min.js"></script>
+  
+  <!-- Load Application Modules -->
+  <script src="src/pdf-processor.js"></script>
+  <script src="src/eye-tracker.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
