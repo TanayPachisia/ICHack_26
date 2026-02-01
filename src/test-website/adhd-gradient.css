@@ -1,0 +1,10 @@
+/*
+ADHD-friendly gradient for highlighted word
+*/
+.word.highlighted {
+  background: linear-gradient(90deg, #f9d423 0%, #ff4e50 100%);
+  color: #222;
+  border-radius: 0.3em;
+  padding: 0.1em 0.3em;
+  transition: background 0.3s;
+}

@@ -7,7 +7,7 @@ let isCalibrated = false;
 let isFocusMode = false;
 
 // Pagination
-let wordsPerPage = 10;
+let wordsPerPage = 6;
 let currentPageInLine = 0;
 let totalPagesInLine = 1;
 
@@ -34,7 +34,7 @@ function paginateWords(fullWords) {
         const needed = (page.length > 0 ? 1 : 0) + w.length; // include a space if not first word
 
         // If adding this word would exceed either limit, push current page and start a new one
-        if (page.length >= wordsPerPage || (charCount + needed) > 66) {
+        if (page.length >= wordsPerPage || (charCount + needed) > 32) {
             pages.push(page);
             page = [];
             charCount = 0;
