@@ -6,6 +6,11 @@ let currentLineWords = []; // Words in the current line
 let isCalibrated = false;
 let isFocusMode = false;
 
+// Pagination
+let wordsPerPage = 10;
+let currentPageInLine = 0;
+let totalPagesInLine = 1;
+
 // Gaze tracking with assistance
 let lastConfirmedWordIndex = 0;  // Last word we're confident about
 let gazeProgressAccumulator = 0; // Accumulated rightward gaze movement
@@ -18,6 +23,31 @@ let lastGazeX = 0;
 let isLookingAtScreen = true; 
 let lastGazeTime = Date.now();
 const GAZE_TIMEOUT = 800;
+
+// Helper: split fullWords into pages obeying wordsPerPage and char limit (66 chars including spaces)
+function paginateWords(fullWords) {
+    const pages = [];
+    let page = [];
+    let charCount = 0;
+
+    for (const w of fullWords) {
+        const needed = (page.length > 0 ? 1 : 0) + w.length; // include a space if not first word
+
+        // If adding this word would exceed either limit, push current page and start a new one
+        if (page.length >= wordsPerPage || (charCount + needed) > 66) {
+            pages.push(page);
+            page = [];
+            charCount = 0;
+        }
+
+        page.push(w);
+        charCount += needed;
+    }
+
+    if (page.length) pages.push(page);
+    // ensure at least one empty page
+    return pages.length ? pages : [[]];
+}
 
 // ========== DOM ELEMENTS ==========
 const startBtn = document.getElementById('startBtn');
@@ -174,6 +204,7 @@ function startFocusReading() {
     lastConfirmedWordIndex = 0;
     gazeProgressAccumulator = 0;
     lastGazeX = window.innerWidth / 2; // Start from center
+    currentPageInLine = 0;
 
     focusReader.style.display = 'flex';
     document.getElementById('pdf-controls').style.display = 'none';
@@ -213,13 +244,21 @@ function displayCurrentLine() {
         return;
     }
 
-    const currentLine = pdfTextLines[currentLineIndex];
-    currentLineWords = currentLine.split(/\s+/).filter(w => w.length > 0);
+    const currentLine = pdfTextLines[currentLineIndex] || '';
+    const fullWords = currentLine.split(/\s+/).filter(w => w.length > 0);
+
+    // Create pages obeying words per page and character limit
+    const pages = paginateWords(fullWords);
+    totalPagesInLine = pages.length;
+    if (currentPageInLine >= totalPagesInLine) currentPageInLine = totalPagesInLine - 1;
+
+    const pageWords = pages[currentPageInLine] || [];
+    currentLineWords = pageWords;
     currentWordIndex = 0;
     lastConfirmedWordIndex = 0;
     gazeProgressAccumulator = 0;
 
-    // clear any pending auto-advance timer when a new line is displayed
+    // clear any pending auto-advance timer when a new line/page is displayed
     if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
 
     readingWindow.innerHTML = '';
@@ -240,7 +279,7 @@ function displayCurrentLine() {
     });
 
     updateWordHighlight(0);
-    lineProgress.textContent = `Line ${currentLineIndex + 1} of ${pdfTextLines.length}`;
+    lineProgress.textContent = `Line ${currentLineIndex + 1} of ${pdfTextLines.length} (Page ${currentPageInLine + 1} of ${totalPagesInLine})`;
 }
 
 function updateWordHighlight(wordIndex) {
@@ -347,16 +386,39 @@ setInterval(() => {
 }, 200);
 
 function goToNextLine() {
+    // If there are more pages in the current line, go to the next page first
+    if (currentPageInLine < totalPagesInLine - 1) {
+        currentPageInLine++;
+        lastGazeX = 0;
+        displayCurrentLine();
+        return;
+    }
+
+    // Otherwise move to the next physical line
     if (currentLineIndex < pdfTextLines.length - 1) {
         currentLineIndex++;
+        currentPageInLine = 0;
         lastGazeX = 0; // Reset to left side for new line
         displayCurrentLine();
     }
 }
 
 function goToPreviousLine() {
+    // If we're not at the first page of this line, go back a page
+    if (currentPageInLine > 0) {
+        currentPageInLine--;
+        displayCurrentLine();
+        return;
+    }
+
+    // Otherwise go to the previous physical line (last page)
     if (currentLineIndex > 0) {
         currentLineIndex--;
+        // compute pages for previous line
+        const prevLine = pdfTextLines[currentLineIndex] || '';
+        const prevWords = prevLine.split(/\s+/).filter(w => w.length > 0);
+        const prevPages = Math.max(1, Math.ceil(prevWords.length / wordsPerPage));
+        currentPageInLine = Math.max(0, prevPages - 1);
         displayCurrentLine();
     }
 }
