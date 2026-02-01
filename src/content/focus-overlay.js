@@ -14,13 +14,25 @@ class FocusOverlay {
       highlightColor: 'rgba(255, 255, 150, 0.3)',
       lineGuide: true,
       overlayColor: 'cream',
-      overlayOpacity: 0.15
+      overlayOpacity: 0.15,
+      spotlightMode: false,
+      spotlightRadius: 150
     };
   }
 
   init() {
     this.createElements();
     this.scanForParagraphs();
+    this.createSpotlightOverlay();
+  }
+
+  createSpotlightOverlay() {
+    if (document.getElementById('adhd-reader-spotlight')) return;
+
+    this.spotlightOverlay = document.createElement('div');
+    this.spotlightOverlay.id = 'adhd-reader-spotlight';
+    this.spotlightOverlay.className = 'adhd-reader-spotlight';
+    document.body.appendChild(this.spotlightOverlay);
   }
 
   createElements() {
@@ -75,8 +87,18 @@ class FocusOverlay {
       this.lineGuide.style.top = `${y - 20}px`;
     }
 
+    if (this.settings.spotlightMode) {
+      this.updateSpotlight(x, y);
+    }
+
     // Find and focus the paragraph at gaze position
     this.focusParagraphAtPosition(x, y);
+  }
+
+  updateSpotlight(x, y) {
+    if (!this.spotlightOverlay) return;
+    // Radial gradient mask to create the flashlight effect
+    this.spotlightOverlay.style.background = `radial-gradient(circle ${this.settings.spotlightRadius}px at ${x}px ${y}px, transparent 0%, transparent 95%, rgba(0, 0, 0, 0.95) 100%)`;
   }
 
   focusParagraphAtPosition(x, y) {
@@ -156,6 +178,18 @@ class FocusOverlay {
     this.settings.lineGuide = show;
   }
 
+  toggleSpotlight(enabled) {
+    this.settings.spotlightMode = enabled;
+    if (this.spotlightOverlay) {
+      this.spotlightOverlay.style.display = enabled ? 'block' : 'none';
+      if (enabled) {
+        document.body.classList.add('adhd-reader-spotlight-active');
+      } else {
+        document.body.classList.remove('adhd-reader-spotlight-active');
+      }
+    }
+  }
+
   hideGazeIndicator() {
     if (this.gazeIndicator) {
       this.gazeIndicator.style.display = 'none';
@@ -164,7 +198,7 @@ class FocusOverlay {
 
   updateSettings(settings) {
     this.settings = { ...this.settings, ...settings };
-    
+
     document.documentElement.style.setProperty(
       '--adhd-focus-blur',
       `${this.settings.blurAmount}px`
@@ -178,12 +212,12 @@ class FocusOverlay {
   destroy() {
     this.disableBlur();
     this.removeOverlay();
-    
+
     if (this.lineGuide) {
       this.lineGuide.remove();
       this.lineGuide = null;
     }
-    
+
     if (this.gazeIndicator) {
       this.gazeIndicator.remove();
       this.gazeIndicator = null;

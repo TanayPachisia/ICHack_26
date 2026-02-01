@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ADHD Reader Settings</title>
   <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
   <div class="popup-container">
     <header class="popup-header">
@@ -41,7 +43,7 @@
           <span class="section-icon">📝</span>
           <h2>Typography</h2>
         </div>
-        
+
         <div class="setting-row">
           <label>Bionic Reading</label>
           <label class="toggle-switch">
@@ -87,7 +89,7 @@
           <span class="section-icon">🎯</span>
           <h2>Focus</h2>
         </div>
-        
+
         <div class="setting-row slider-row">
           <label>Blur Amount: <span id="blurAmountValue">3px</span></label>
           <input type="range" id="blurAmount" min="0" max="10" value="3" step="0.5">
@@ -100,6 +102,26 @@
             <span class="slider"></span>
           </label>
         </div>
+
+        <div class="setting-row">
+          <label>Spotlight Mode</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="spotlightMode">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Tools Section -->
+      <section class="settings-section">
+        <div class="section-header">
+          <span class="section-icon">🛠️</span>
+          <h2>Tools</h2>
+        </div>
+        <button id="openPdfReaderBtn" class="btn btn-secondary"
+          style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
+          📄 Open PDF Reader
+        </button>
       </section>
 
       <!-- Overlay Section -->
@@ -108,7 +130,7 @@
           <span class="section-icon">🎨</span>
           <h2>Color Overlay</h2>
         </div>
-        
+
         <div class="setting-row">
           <label>Enable Overlay</label>
           <label class="toggle-switch">
@@ -132,7 +154,7 @@
           <span class="section-icon">♿</span>
           <h2>Accessibility</h2>
         </div>
-        
+
         <div class="setting-row">
           <label>Reduce Motion</label>
           <label class="toggle-switch">
@@ -158,4 +180,5 @@
 
   <script src="popup.js"></script>
 </body>
+
 </html>

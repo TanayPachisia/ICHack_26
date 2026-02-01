@@ -9,11 +9,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const elements = {
     // Main toggle
     enabled: document.getElementById('enabled'),
-    
+
     // Eye tracking
     eyeTracking: document.getElementById('eyeTracking'),
     calibrateBtn: document.getElementById('calibrateBtn'),
-    
+
     // Typography
     bionicReading: document.getElementById('bionicReading'),
     fontFamily: document.getElementById('fontFamily'),
@@ -25,16 +25,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     letterSpacingValue: document.getElementById('letterSpacingValue'),
     wordSpacing: document.getElementById('wordSpacing'),
     wordSpacingValue: document.getElementById('wordSpacingValue'),
-    
+
     // Focus
     blurAmount: document.getElementById('blurAmount'),
     blurAmountValue: document.getElementById('blurAmountValue'),
     lineGuide: document.getElementById('lineGuide'),
-    
+    spotlightMode: document.getElementById('spotlightMode'),
+
+    // Tools
+    openPdfReaderBtn: document.getElementById('openPdfReaderBtn'),
+
     // Overlay
     overlayEnabled: document.getElementById('overlayEnabled'),
     colorButtons: document.querySelectorAll('.color-btn'),
-    
+
     // Accessibility
     reduceMotion: document.getElementById('reduceMotion'),
     highContrast: document.getElementById('highContrast')
@@ -44,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function populateUI() {
     elements.enabled.checked = settings.enabled;
     elements.eyeTracking.checked = settings.eyeTracking?.enabled || false;
-    
+
     // Typography
     elements.bionicReading.checked = settings.typography?.bionicReading || false;
     elements.fontFamily.value = settings.typography?.fontFamily || 'default';
@@ -56,16 +60,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.letterSpacingValue.textContent = `${settings.typography?.letterSpacing || 0}px`;
     elements.wordSpacing.value = settings.typography?.wordSpacing || 0;
     elements.wordSpacingValue.textContent = `${settings.typography?.wordSpacing || 0}px`;
-    
+
     // Focus
     elements.blurAmount.value = settings.focus?.blurAmount || 3;
     elements.blurAmountValue.textContent = `${settings.focus?.blurAmount || 3}px`;
     elements.lineGuide.checked = settings.focus?.lineGuide ?? true;
-    
+    elements.spotlightMode.checked = settings.focus?.spotlightMode || false;
+
     // Overlay
     elements.overlayEnabled.checked = settings.overlay?.enabled || false;
     updateColorButtons(settings.overlay?.color || 'cream');
-    
+
     // Accessibility
     elements.reduceMotion.checked = settings.accessibility?.reduceMotion || false;
     elements.highContrast.checked = settings.accessibility?.highContrast || false;
@@ -168,6 +173,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.lineGuide.addEventListener('change', async () => {
     settings.focus.lineGuide = elements.lineGuide.checked;
     await saveSettings();
+  });
+
+  elements.spotlightMode.addEventListener('change', async () => {
+    settings.focus.spotlightMode = elements.spotlightMode.checked;
+    await saveSettings();
+  });
+
+  elements.openPdfReaderBtn.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/pdf-reader/index.html') });
   });
 
   // Overlay
