@@ -1,14 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>WebGazer Demo</title>
-</head>
-<body>
-    <h1>Look around the screen!</h1>
-    <p>Check the console (F12) to see your coordinates.</p>
+    <title>WebGazer Calibration Demo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
 
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+        #instruction {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .calibration-point {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 2000;
+            transform: translate(-50%, -50%);
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .calibration-point:active {
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+
+        /* Video feed styling to keep it visible but out of the way if needed */
+        #webgazerVideoFeed {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 500 !important;
+            width: 320px !important;
+            height: 240px !important;
+            display: block !important;
+            /* Ensure visibility */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="instruction">
+        <h1>Eye Tracking Calibration</h1>
+        <p>1. Allow camera access.</p>
+        <p>2. Click each red point 5 times while looking at it.</p>
+        <p>3. Keep your head valid.</p>
+        <button id="startBtn" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Start Calibration</button>
+    </div>
+
+    <!-- Use local WebGazer if available, else fallback to CDN -->
+    <script src="webgazer.js"></script>
     <script src="main.js"></script>
 </body>
+
 </html>
