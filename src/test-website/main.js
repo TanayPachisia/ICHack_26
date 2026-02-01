@@ -9,6 +9,7 @@ let isFocusMode = false;
 // Gaze tracking with assistance
 let lastConfirmedWordIndex = 0;  // Last word we're confident about
 let gazeProgressAccumulator = 0; // Accumulated rightward gaze movement
+let autoAdvanceTimer = null; // Timer to trigger auto-advance when user stays on second-last word
 const ADVANCE_THRESHOLD = 0.08;  // How much rightward movement needed to advance (fraction of screen)
 const RETREAT_THRESHOLD = 0.15;  // Larger threshold for going backwards (harder to go back accidentally)
 let lastGazeX = 0;
@@ -198,6 +199,11 @@ function exitFocusMode() {
     if (smoothCursor) {
         smoothCursor.style.display = 'block';
     }
+
+    if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+
+    // clear auto-advance timer when exiting focus mode
+    if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
 }
 
 function displayCurrentLine() {
@@ -212,6 +218,9 @@ function displayCurrentLine() {
     currentWordIndex = 0;
     lastConfirmedWordIndex = 0;
     gazeProgressAccumulator = 0;
+
+    // clear any pending auto-advance timer when a new line is displayed
+    if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
 
     readingWindow.innerHTML = '';
     currentLineWords.forEach((word, index) => {
@@ -235,6 +244,9 @@ function displayCurrentLine() {
 }
 
 function updateWordHighlight(wordIndex) {
+    // clear any previous auto-advance timer whenever highlight changes
+    if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+
     const words = readingWindow.querySelectorAll('.word');
     words.forEach((word, index) => {
         word.classList.remove('highlighted');
@@ -248,6 +260,18 @@ function updateWordHighlight(wordIndex) {
     if (words[wordIndex]) {
         words[wordIndex].classList.add('highlighted');
         words[wordIndex].classList.remove('read');
+
+        // If this is the second-last word of the current line, set a 0.5s auto-advance guard
+        const secondLastIndex = currentLineWords.length - 2;
+        if (wordIndex === secondLastIndex && currentLineIndex < pdfTextLines.length - 1) {
+            autoAdvanceTimer = setTimeout(() => {
+                // Only advance if we're still on the same word (no progress)
+                if (currentWordIndex === wordIndex) {
+                    goToNextLine();
+                }
+                autoAdvanceTimer = null;
+            }, 300);
+        }
     }
 }
 
