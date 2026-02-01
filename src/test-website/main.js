@@ -1,8 +1,22 @@
 // ========== GLOBAL STATE ==========
 let pdfTextLines = []; // Array of text lines extracted from PDF
 let currentLineIndex = 0;
+let currentWordIndex = 0;
+let currentLineWords = []; // Words in the current line
 let isCalibrated = false;
 let isFocusMode = false;
+
+// Gaze tracking with assistance
+let lastConfirmedWordIndex = 0;  // Last word we're confident about
+let gazeProgressAccumulator = 0; // Accumulated rightward gaze movement
+const ADVANCE_THRESHOLD = 0.08;  // How much rightward movement needed to advance (fraction of screen)
+const RETREAT_THRESHOLD = 0.15;  // Larger threshold for going backwards (harder to go back accidentally)
+let lastGazeX = 0;
+
+// For "looking at screen" detection
+let isLookingAtScreen = true;
+let lastGazeTime = Date.now();
+const GAZE_TIMEOUT = 800;
 
 // ========== DOM ELEMENTS ==========
 const startBtn = document.getElementById('startBtn');
@@ -11,10 +25,15 @@ const pdfUpload = document.getElementById('pdf-upload');
 const pdfViewer = document.getElementById('pdf-viewer');
 const startFocusBtn = document.getElementById('startFocusBtn');
 const focusReader = document.getElementById('focus-reader');
-const readingText = document.getElementById('reading-text');
+const readingWindow = document.getElementById('reading-window');
 const lineProgress = document.getElementById('line-progress');
 const gazePosition = document.getElementById('gaze-position');
 const exitFocusBtn = document.getElementById('exit-focus-btn');
+const prevLineBtn = document.getElementById('prev-line-btn');
+const nextLineBtn = document.getElementById('next-line-btn');
+const pauseBtn = document.getElementById('pause-btn');
+const speedSlider = document.getElementById('speed-slider');
+const speedValue = document.getElementById('speed-value');
 
 // ========== INITIALIZATION ==========
 window.onload = async function () {
@@ -56,6 +75,44 @@ window.onload = async function () {
             exitFocusMode();
         });
     }
+
+    // Navigation Buttons
+    if (prevLineBtn) {
+        prevLineBtn.addEventListener('click', () => {
+            goToPreviousLine();
+        });
+    }
+
+    if (nextLineBtn) {
+        nextLineBtn.addEventListener('click', () => {
+            goToNextLine();
+        });
+    }
+
+    // Sensitivity Slider (repurposed from speed)
+    if (speedSlider) {
+        speedSlider.min = 1;
+        speedSlider.max = 10;
+        speedSlider.value = 5;
+        if (speedValue) {
+            speedValue.textContent = 'Medium';
+        }
+        
+        speedSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            // Map 1-10 to sensitivity descriptions
+            const labels = ['Very Sticky', 'Sticky', 'Sticky', 'Medium-Sticky', 'Medium', 
+                          'Medium', 'Responsive', 'Responsive', 'Quick', 'Very Quick'];
+            if (speedValue) {
+                speedValue.textContent = labels[val - 1];
+            }
+            // Adjust threshold based on sensitivity (lower = more sensitive)
+            // Range: 0.15 (sticky) to 0.03 (quick)
+            window.currentAdvanceThreshold = 0.15 - (val - 1) * 0.012;
+        });
+        
+        window.currentAdvanceThreshold = ADVANCE_THRESHOLD;
+    }
 };
 
 // ========== PDF TEXT EXTRACTION ==========
@@ -70,15 +127,11 @@ async function extractPDFText(file) {
             const page = await pdf.getPage(pageNum);
             const textContent = await page.getTextContent();
 
-            // Group text items into lines based on Y position
             const lineMap = new Map();
 
             textContent.items.forEach((item) => {
                 if (!item.str || item.str.trim() === '') return;
-
-                // Round Y to group items on same line
                 const yKey = Math.round(item.transform[5]);
-
                 if (!lineMap.has(yKey)) {
                     lineMap.set(yKey, []);
                 }
@@ -88,14 +141,11 @@ async function extractPDFText(file) {
                 });
             });
 
-            // Sort lines by Y (top to bottom in PDF = higher Y first)
             const sortedYs = Array.from(lineMap.keys()).sort((a, b) => b - a);
 
             sortedYs.forEach(y => {
                 const lineItems = lineMap.get(y);
-                // Sort items within line by X (left to right)
                 lineItems.sort((a, b) => a.x - b.x);
-                // Combine text items into single line string
                 const lineText = lineItems.map(item => item.text).join(' ');
                 if (lineText.trim()) {
                     pdfTextLines.push(lineText);
@@ -105,14 +155,8 @@ async function extractPDFText(file) {
 
         console.log(`Extracted ${pdfTextLines.length} lines from PDF`);
 
-        // Show the Start Focus Reading button
         if (startFocusBtn) {
             startFocusBtn.style.display = 'block';
-        }
-
-        // Preview first few lines
-        if (readingText) {
-            readingText.textContent = pdfTextLines[0] || 'No text found in PDF';
         }
 
     } catch (error) {
@@ -125,20 +169,25 @@ async function extractPDFText(file) {
 function startFocusReading() {
     isFocusMode = true;
     currentLineIndex = 0;
+    currentWordIndex = 0;
+    lastConfirmedWordIndex = 0;
+    gazeProgressAccumulator = 0;
+    lastGazeX = window.innerWidth / 2; // Start from center
 
-    // Show focus reader UI
     focusReader.style.display = 'flex';
-
-    // Hide other UI elements
     document.getElementById('pdf-controls').style.display = 'none';
 
-    // Hide the smooth cursor in focus mode
     if (smoothCursor) {
         smoothCursor.style.display = 'none';
     }
 
-    // Display first line
-    updateReadingDisplay();
+    // Update label for sensitivity slider
+    const label = document.querySelector('#speed-control label');
+    if (label) {
+        label.textContent = 'Sensitivity:';
+    }
+
+    displayCurrentLine();
 }
 
 function exitFocusMode() {
@@ -146,90 +195,175 @@ function exitFocusMode() {
     focusReader.style.display = 'none';
     document.getElementById('pdf-controls').style.display = 'flex';
 
-    // Show cursor again
     if (smoothCursor) {
         smoothCursor.style.display = 'block';
     }
 }
 
-function updateReadingDisplay() {
+function displayCurrentLine() {
     if (currentLineIndex >= pdfTextLines.length) {
-        readingText.textContent = '📚 End of document!';
+        readingWindow.innerHTML = '<span class="word highlighted">📚 End of document!</span>';
         lineProgress.textContent = 'Reading complete!';
         return;
     }
 
     const currentLine = pdfTextLines[currentLineIndex];
-    readingText.textContent = currentLine;
+    currentLineWords = currentLine.split(/\s+/).filter(w => w.length > 0);
+    currentWordIndex = 0;
+    lastConfirmedWordIndex = 0;
+    gazeProgressAccumulator = 0;
+
+    readingWindow.innerHTML = '';
+    currentLineWords.forEach((word, index) => {
+        const span = document.createElement('span');
+        span.className = 'word';
+        span.textContent = word;
+        span.dataset.index = index;
+        
+        span.addEventListener('click', () => {
+            currentWordIndex = index;
+            lastConfirmedWordIndex = index;
+            gazeProgressAccumulator = 0;
+            updateWordHighlight(currentWordIndex);
+        });
+        
+        readingWindow.appendChild(span);
+    });
+
+    updateWordHighlight(0);
     lineProgress.textContent = `Line ${currentLineIndex + 1} of ${pdfTextLines.length}`;
 }
 
-// Called by gaze listener to update scroll position
-function updateFocusReadingPosition(gazeX) {
-    if (!isFocusMode) return;
+function updateWordHighlight(wordIndex) {
+    const words = readingWindow.querySelectorAll('.word');
+    words.forEach((word, index) => {
+        word.classList.remove('highlighted');
+        if (index < wordIndex) {
+            word.classList.add('read');
+        } else {
+            word.classList.remove('read');
+        }
+    });
 
+    if (words[wordIndex]) {
+        words[wordIndex].classList.add('highlighted');
+        words[wordIndex].classList.remove('read');
+    }
+}
+
+// ========== GAZE-DRIVEN WORD ADVANCEMENT ==========
+function updateGazePosition(gazeX, gazeY) {
+    if (!isFocusMode || currentLineWords.length === 0) return;
+    
+    lastGazeTime = Date.now();
+    
     const screenWidth = window.innerWidth;
-
-    // Map gaze X to a normalized position (0 = left, 1 = right)
-    const normalizedX = Math.max(0, Math.min(1, gazeX / screenWidth));
-
+    
     // Update gaze indicator
-    if (gazePosition) {
+    if (gazePosition && gazePosition.parentElement) {
+        const normalizedX = Math.max(0, Math.min(1, gazeX / screenWidth));
         const indicatorWidth = gazePosition.parentElement.offsetWidth - 20;
         gazePosition.style.marginLeft = `${normalizedX * indicatorWidth}px`;
     }
-
-    // Calculate text scroll based on gaze position
-    const currentLine = pdfTextLines[currentLineIndex] || '';
-    const charWidth = 18; // Approximate character width in pixels at 32px font
-    const visibleChars = 25; // How many characters fit in the window
-    const totalChars = currentLine.length;
-    const maxScroll = Math.max(0, (totalChars - visibleChars) * charWidth);
-
-    // Scroll text based on gaze
-    const scrollX = normalizedX * maxScroll;
-    readingText.style.transform = `translateX(${-scrollX}px)`;
-
-    // Advance to next line when gaze reaches right edge
-    if (normalizedX > 0.9) {
-        // Check if we've been looking right for a moment (debounce)
-        if (!window.rightGazeTimer) {
-            window.rightGazeTimer = setTimeout(() => {
-                advanceToNextLine();
-                window.rightGazeTimer = null;
-            }, 800); // Wait 800ms before advancing
+    
+    // Calculate relative movement (normalized to screen width)
+    const deltaX = (gazeX - lastGazeX) / screenWidth;
+    lastGazeX = gazeX;
+    
+    // Get current threshold (from slider)
+    const advanceThreshold = window.currentAdvanceThreshold || ADVANCE_THRESHOLD;
+    
+    // FORWARD MOVEMENT: Accumulate rightward movement
+    if (deltaX > 0) {
+        gazeProgressAccumulator += deltaX;
+        
+        // Check if we've accumulated enough to advance
+        if (gazeProgressAccumulator >= advanceThreshold) {
+            gazeProgressAccumulator = 0; // Reset
+            
+            if (currentWordIndex < currentLineWords.length - 1) {
+                currentWordIndex++;
+                lastConfirmedWordIndex = currentWordIndex;
+                updateWordHighlight(currentWordIndex);
+            } else {
+                // End of line - advance to next
+                goToNextLine();
+            }
         }
-    } else {
-        // Cancel timer if gaze moves away from right edge
-        if (window.rightGazeTimer) {
-            clearTimeout(window.rightGazeTimer);
-            window.rightGazeTimer = null;
+    }
+    
+    // BACKWARD MOVEMENT: Requires more significant leftward movement
+    if (deltaX < 0) {
+        // Subtract from accumulator (can go negative)
+        gazeProgressAccumulator += deltaX;
+        
+        // If we've moved significantly left, go back a word
+        if (gazeProgressAccumulator < -RETREAT_THRESHOLD) {
+            gazeProgressAccumulator = 0;
+            
+            if (currentWordIndex > 0) {
+                currentWordIndex--;
+                lastConfirmedWordIndex = currentWordIndex;
+                updateWordHighlight(currentWordIndex);
+            }
         }
     }
 }
 
-function advanceToNextLine() {
+// Check if user is still looking at screen
+setInterval(() => {
+    if (!isFocusMode) return;
+    
+    const timeSinceLastGaze = Date.now() - lastGazeTime;
+    if (timeSinceLastGaze > GAZE_TIMEOUT) {
+        isLookingAtScreen = false;
+    } else {
+        isLookingAtScreen = true;
+    }
+}, 200);
+
+function goToNextLine() {
     if (currentLineIndex < pdfTextLines.length - 1) {
         currentLineIndex++;
-        updateReadingDisplay();
-        // Reset scroll position for new line
-        readingText.style.transform = 'translateX(0)';
+        lastGazeX = 0; // Reset to left side for new line
+        displayCurrentLine();
     }
 }
 
-// Keyboard controls for focus mode
+function goToPreviousLine() {
+    if (currentLineIndex > 0) {
+        currentLineIndex--;
+        displayCurrentLine();
+    }
+}
+
+// Keyboard controls
 document.addEventListener('keydown', (e) => {
     if (!isFocusMode) return;
 
-    if (e.key === 'ArrowDown' || e.key === ' ') {
+    if (e.key === 'ArrowDown') {
         e.preventDefault();
-        advanceToNextLine();
+        goToNextLine();
     } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        if (currentLineIndex > 0) {
-            currentLineIndex--;
-            updateReadingDisplay();
-            readingText.style.transform = 'translateX(0)';
+        goToPreviousLine();
+    } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (currentWordIndex < currentLineWords.length - 1) {
+            currentWordIndex++;
+            lastConfirmedWordIndex = currentWordIndex;
+            gazeProgressAccumulator = 0;
+            updateWordHighlight(currentWordIndex);
+        } else {
+            goToNextLine();
+        }
+    } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (currentWordIndex > 0) {
+            currentWordIndex--;
+            lastConfirmedWordIndex = currentWordIndex;
+            gazeProgressAccumulator = 0;
+            updateWordHighlight(currentWordIndex);
         }
     } else if (e.key === 'Escape') {
         exitFocusMode();
@@ -247,25 +381,18 @@ async function initWebGazer() {
             .setGazeListener(function (data, elapsedTime) {
                 if (data == null) return;
 
-                // Smooth the data
                 const smoothed = getSmoothedCoordinates(data.x, data.y);
 
-                // Update custom cursor (when not in focus mode)
                 if (!isFocusMode) {
                     updateSmoothCursor(smoothed.x, smoothed.y);
                 }
 
-                // Update focus reading position
-                updateFocusReadingPosition(smoothed.x);
+                updateGazePosition(smoothed.x, smoothed.y);
             })
             .begin();
 
-        console.log("WebGazer initialized with Kalman Filter!");
-
-        // Create custom smooth cursor
+        console.log("WebGazer initialized!");
         createSmoothCursor();
-
-        // Start Calibration
         startCalibration();
 
     } catch (e) {
@@ -310,7 +437,7 @@ function createPoint(xPercent, yPercent) {
     point.style.top = yPercent + '%';
     point.title = `Click ${5 - clickCount} more times`;
 
-    point.addEventListener('click', (e) => {
+    point.addEventListener('click', () => {
         clickCount++;
         point.style.opacity = (1 - (clickCount / 6));
 
@@ -327,7 +454,6 @@ function createPoint(xPercent, yPercent) {
 function finishCalibration() {
     isCalibrated = true;
 
-    // Show success message
     const msg = document.createElement('div');
     msg.style.cssText = `
         position: fixed;
@@ -360,7 +486,6 @@ function finishCalibration() {
 
     document.getElementById('closeCalibrationMsg').addEventListener('click', () => {
         msg.remove();
-        // Show PDF controls again
         document.getElementById('pdf-controls').style.display = 'flex';
     });
 
@@ -368,7 +493,7 @@ function finishCalibration() {
 }
 
 // ========== SMOOTHING LOGIC ==========
-const HISTORY_SIZE = 40;
+const HISTORY_SIZE = 30; // Slightly less smoothing for more responsiveness
 const gazeHistory = [];
 
 function getSmoothedCoordinates(x, y) {

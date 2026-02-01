@@ -157,50 +157,79 @@
         }
 
         #reading-window {
-            width: 80%;
-            max-width: 800px;
-            height: 120px;
+            width: 90%;
+            max-width: 900px;
+            min-height: 100px;
+            padding: 30px 40px;
             background: #fff;
             border-radius: 16px;
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            flex-wrap: wrap;
+            gap: 8px;
             position: relative;
+            line-height: 1.8;
         }
 
-        #reading-text {
-            font-size: 32px;
+        .word {
+            font-size: 28px;
             font-weight: 400;
-            color: #2c3e50;
-            letter-spacing: 0.05em;
-            word-spacing: 0.2em;
-            white-space: nowrap;
-            transition: transform 0.1s ease-out;
+            color: #7a8599;
+            letter-spacing: 0.03em;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.15s ease-out;
+            cursor: default;
         }
 
-        /* Highlight effect for current word area */
-        #reading-window::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 100%;
-            background: linear-gradient(90deg, 
-                transparent 0%, 
-                rgba(102, 126, 234, 0.1) 20%, 
-                rgba(102, 126, 234, 0.15) 50%, 
-                rgba(102, 126, 234, 0.1) 80%, 
-                transparent 100%);
-            pointer-events: none;
+        .word.highlighted {
+            color: #1a1a2e;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+            font-weight: 500;
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
         }
+
+        .word.read {
+            color: #bdc3c7;
+        }
+
+
 
         #line-progress {
-            margin-top: 30px;
+            margin-top: 20px;
             font-size: 16px;
             color: #666;
+        }
+
+        /* Navigation buttons */
+        #nav-buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .nav-btn {
+            padding: 12px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Lexend', sans-serif;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-btn:active {
+            transform: translateY(0);
         }
 
         #exit-focus-btn {
@@ -220,21 +249,21 @@
         /* Gaze indicator in focus mode */
         #gaze-indicator {
             position: fixed;
-            bottom: 50px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             width: 60%;
-            height: 8px;
+            height: 6px;
             background: rgba(0,0,0,0.1);
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
         #gaze-position {
             height: 100%;
             width: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 4px;
-            transition: margin-left 0.1s ease-out;
+            border-radius: 3px;
+            transition: margin-left 0.15s ease-out;
         }
 
         /* Hide default pdf-viewer in focus mode */
@@ -263,10 +292,29 @@
     <!-- Focus Reader UI -->
     <div id="focus-reader">
         <button id="exit-focus-btn">✕ Exit</button>
-        <div id="reading-window">
-            <div id="reading-text">Upload a PDF to begin reading...</div>
+        
+        <!-- Speed Control -->
+        <div id="speed-control" style="position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.9); padding: 15px 20px; border-radius: 12px; z-index: 4001;">
+            <label style="font-size: 14px; color: #333;">Reading Speed:</label>
+            <input type="range" id="speed-slider" min="100" max="800" value="300" style="width: 150px; margin: 0 10px;">
+            <span id="speed-value" style="font-size: 14px; color: #666;">300 WPM</span>
         </div>
+        
+        <div id="reading-window">
+            <!-- Words will be inserted here dynamically -->
+        </div>
+        
         <div id="line-progress">Line 1 of 1</div>
+        
+        <div id="nav-buttons">
+            <button class="nav-btn" id="prev-line-btn">← Previous</button>
+            <button class="nav-btn" id="next-line-btn">Next →</button>
+        </div>
+        
+        <div id="reading-mode-info" style="margin-top: 15px; font-size: 14px; color: #888;">
+            Move eyes right to advance • Click any word to jump • Arrow keys work too
+        </div>
+        
         <div id="gaze-indicator">
             <div id="gaze-position"></div>
         </div>
