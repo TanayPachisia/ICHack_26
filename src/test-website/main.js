@@ -15,7 +15,7 @@ const RETREAT_THRESHOLD = 0.15;  // Larger threshold for going backwards (harder
 let lastGazeX = 0;
 
 // For "looking at screen" detection
-let isLookingAtScreen = true;
+let isLookingAtScreen = true; 
 let lastGazeTime = Date.now();
 const GAZE_TIMEOUT = 800;
 
@@ -270,7 +270,7 @@ function updateWordHighlight(wordIndex) {
                     goToNextLine();
                 }
                 autoAdvanceTimer = null;
-            }, 300);
+            }, 300); 
         }
     }
 }
