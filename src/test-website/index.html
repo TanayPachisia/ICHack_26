@@ -3,17 +3,25 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>WebGazer Calibration Demo</title>
+    <title>Focus Reader - ADHD/Dyslexia Friendly</title>
+    <!-- PDF.js Viewer CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+    <!-- Google Fonts - Lexend is dyslexia-friendly -->
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: sans-serif;
+            font-family: 'Lexend', sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #f0f0f0;
+            background-color: #1a1a2e; /* Dark calm background */
             overflow: hidden;
         }
 
@@ -23,55 +31,257 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             z-index: 1000;
+            max-width: 400px;
+        }
+
+        #instruction h1 {
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        #instruction p {
+            color: #444;
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        #instruction button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: 'Lexend', sans-serif;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #instruction button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         .calibration-point {
             position: fixed;
-            width: 20px;
-            height: 20px;
-            background-color: red;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             border-radius: 50%;
             cursor: pointer;
             z-index: 2000;
             transform: translate(-50%, -50%);
-            border: 2px solid white;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border: 3px solid white;
+            box-shadow: 0 0 20px rgba(240, 147, 251, 0.5);
             transition: transform 0.1s, opacity 0.2s;
         }
 
         .calibration-point:active {
-            transform: translate(-50%, -50%) scale(0.9);
+            transform: translate(-50%, -50%) scale(0.85);
         }
 
-        /* Video feed styling to keep it visible but out of the way if needed */
+        /* Video feed styling */
         #webgazerVideoFeed {
             position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
+            top: 10px !important;
+            right: 10px !important;
+            left: auto !important;
             z-index: 500 !important;
-            width: 320px !important;
-            height: 240px !important;
-            display: block !important;
-            /* Ensure visibility */
+            width: 200px !important;
+            height: 150px !important;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        /* PDF Controls */
+        #pdf-controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 3000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #pdf-controls label {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        #pdf-controls input[type="file"] {
+            font-family: 'Lexend', sans-serif;
+        }
+
+        #startFocusBtn {
+            padding: 10px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Lexend', sans-serif;
+            display: none; /* Hidden until PDF is loaded */
+        }
+
+        #startFocusBtn:hover {
+            opacity: 0.9;
+        }
+
+        /* ========== FOCUS READER ========== */
+        #focus-reader {
+            display: none; /* Hidden until focus mode starts */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fdf6e3; /* Warm cream - easier on eyes */
+            z-index: 4000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #reading-window {
+            width: 80%;
+            max-width: 800px;
+            height: 120px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #reading-text {
+            font-size: 32px;
+            font-weight: 400;
+            color: #2c3e50;
+            letter-spacing: 0.05em;
+            word-spacing: 0.2em;
+            white-space: nowrap;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Highlight effect for current word area */
+        #reading-window::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(102, 126, 234, 0.1) 20%, 
+                rgba(102, 126, 234, 0.15) 50%, 
+                rgba(102, 126, 234, 0.1) 80%, 
+                transparent 100%);
+            pointer-events: none;
+        }
+
+        #line-progress {
+            margin-top: 30px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        #exit-focus-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Lexend', sans-serif;
+            z-index: 4001;
+        }
+
+        /* Gaze indicator in focus mode */
+        #gaze-indicator {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 8px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+
+        #gaze-position {
+            height: 100%;
+            width: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: margin-left 0.1s ease-out;
+        }
+
+        /* Hide default pdf-viewer in focus mode */
+        #pdf-viewer {
+            display: none;
         }
     </style>
 </head>
 
 <body>
     <div id="instruction">
-        <h1>Eye Tracking Calibration</h1>
-        <p>1. Allow camera access.</p>
-        <p>2. Click each red point 5 times while looking at it.</p>
-        <p>3. Keep your head valid.</p>
-        <button id="startBtn" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Start Calibration</button>
+        <h1>🎯 Focus Reader</h1>
+        <p>1. Upload a PDF document</p>
+        <p>2. Calibrate eye tracking</p>
+        <p>3. Read with focus - text follows your eyes!</p>
+        <button id="startBtn">Start Calibration</button>
     </div>
 
-    <!-- Use local WebGazer if available, else fallback to CDN -->
+    <!-- PDF Controls -->
+    <div id="pdf-controls">
+        <label>📄 Upload PDF:</label>
+        <input type="file" id="pdf-upload" accept="application/pdf" />
+        <button id="startFocusBtn">▶ Start Focus Reading</button>
+    </div>
+
+    <!-- Focus Reader UI -->
+    <div id="focus-reader">
+        <button id="exit-focus-btn">✕ Exit</button>
+        <div id="reading-window">
+            <div id="reading-text">Upload a PDF to begin reading...</div>
+        </div>
+        <div id="line-progress">Line 1 of 1</div>
+        <div id="gaze-indicator">
+            <div id="gaze-position"></div>
+        </div>
+    </div>
+
+    <!-- Hidden PDF viewer for text extraction -->
+    <div id="pdf-viewer"></div>
+
+    <!-- PDF.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+
+    <!-- WebGazer -->
     <script src="webgazer.js"></script>
     <script src="main.js"></script>
 </body>
